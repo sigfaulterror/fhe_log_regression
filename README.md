@@ -1,7 +1,18 @@
-# FHE Logistical Regression
-This project is an attempt to implement logistical regression using zama library for FHE encryption
+# Dependencies
 
+If the build does not succeed by default you need to install these dependencies:
+https://docs.rs/openssl/latest/openssl/
+```sh
+apt-get install pkg-config libssl-dev
+```
+# Install Concrete dependency
+
+https://docs.zama.ai/concrete/lib/user/installation.html
+# FHE Logistical Regression
+
+This project is an attempt to implement logistical regression using zama library for FHE encryption
 # Build the project
+
 ```sh
 make build
 ```
