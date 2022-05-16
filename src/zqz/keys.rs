@@ -14,6 +14,7 @@ const KEYSWITCHING_FILE: &str = "keyswitching_key.txt";
 pub struct HomomorphicKey {
     pub(super) bootstrapping: crypto_api::LWEBSK,
     pub(super) keyswitching: crypto_api::LWEKSK,
+    pub(super) secret : crypto_api::LWESecretKey
 }
 
 /// A secret key available only to the user side, allowing to encrypt ant decrypt data.
@@ -56,6 +57,7 @@ impl EncryptKey {
         let hk = HomomorphicKey {
             bootstrapping: bsk,
             keyswitching: ksk,
+            secret:lwe_sk.clone()
         };
 
         EncryptKey {
@@ -80,6 +82,7 @@ impl EncryptKey {
         let hk = HomomorphicKey {
             bootstrapping: bsk,
             keyswitching: ksk,
+            secret: lwe_sk.clone()
         };
 
         EncryptKey {
@@ -119,6 +122,7 @@ impl EncryptKey {
         let hk = HomomorphicKey {
             bootstrapping: bsk,
             keyswitching: ksk,
+            secret:secret_key.clone()
         };
         EncryptKey {
             secret: secret_key,
@@ -127,28 +131,30 @@ impl EncryptKey {
     }
 
     /// Encrypt the given message
-    pub fn encrypt_float(&self, message: f64,min: f64, max:f64,nb_bit_precision:usize, nb_bit_padding:usize) -> zqz::cipherfloat::Cipherfloat {
-            let m = message % (PARAMS.modulo as f64);
-            let encoder: crypto_api::Encoder = crypto_api::Encoder::new_rounding_context(
-                min,
-                max,
-                nb_bit_precision,
-                nb_bit_padding
-                )
-            .unwrap();
-            let ct: crypto_api::LWE =
-                crypto_api::LWE::encode_encrypt(&self.secret, m, &encoder).unwrap();
-            zqz::cipherfloat::Cipherfloat {
-                cipherfloat: ct,
-                evaluation_key: self.evaluation.clone(),
-            }
+    pub fn encrypt_float(&self, message: f64, min: f64, max: f64) -> zqz::cipherfloat::Cipherfloat {
+        //let m = message % (PARAMS.modulo as f64);
+        let encoder: crypto_api::Encoder = crypto_api::Encoder::new(
+            min,
+            max,
+            PARAMS.nb_bit_precision,
+            PARAMS.nb_bit_padding,
+        )
+        .unwrap();
+        let ct: crypto_api::LWE =
+            crypto_api::LWE::encode_encrypt(&self.secret, message, &encoder).unwrap();
+        zqz::cipherfloat::Cipherfloat {
+            cipherfloat: ct,
+            evaluation_key: self.evaluation.clone(),
         }
+    }
     //
-    pub fn encrypt_vector(&self, v: &Vec<f64>, min: f64, max:f64,nb_bit_precision:usize, nb_bit_padding:usize) -> zqz::vector::CipherVector {
-
-        let mut cv :Vec<zqz::cipherfloat::Cipherfloat> = Vec::new();
-        for i in 0..v.len(){
-            let c : zqz::cipherfloat::Cipherfloat  = self.encrypt_float(v[i],min,max,nb_bit_precision,nb_bit_padding);
+    pub fn encrypt_vector(&self, v: &Vec<f64>, min: f64, max: f64) -> zqz::vector::CipherVector {
+        let mut cv: Vec<zqz::cipherfloat::Cipherfloat> = Vec::new();
+        for i in 0..v.len() {
+            let c: zqz::cipherfloat::Cipherfloat = self.encrypt_float(
+                v[i],
+                min,
+                max);
             cv.push(c);
         }
         zqz::vector::CipherVector {
@@ -158,18 +164,23 @@ impl EncryptKey {
         }
     }
 
-    pub fn encrypt_matrix(&self, matrix: &Vec<Vec<f64>>, min: f64, max:f64,nb_bit_precision:usize, nb_bit_padding:usize) -> zqz::matrix::CipherMatrix {
-
+    pub fn encrypt_matrix(
+        &self,
+        matrix: &Vec<Vec<f64>>,
+        min: f64,
+        max: f64,
+    ) -> zqz::matrix::CipherMatrix {
         //TODO check length of matrix
 
         let n: usize = matrix.len();
         let m: usize = matrix[0].len();
 
-        let mut cm :Vec<Vec<zqz::cipherfloat::Cipherfloat>> = Vec::new();
-        for i in 0..n{
-            let mut cmr :Vec<zqz::cipherfloat::Cipherfloat> = Vec::new();
-            for j in 0..m{
-                let c : zqz::cipherfloat::Cipherfloat  = self.encrypt_float(matrix[i][j],min,max,nb_bit_precision,nb_bit_padding);
+        let mut cm: Vec<Vec<zqz::cipherfloat::Cipherfloat>> = Vec::new();
+        for i in 0..n {
+            let mut cmr: Vec<zqz::cipherfloat::Cipherfloat> = Vec::new();
+            for j in 0..m {
+                let c: zqz::cipherfloat::Cipherfloat =
+                    self.encrypt_float(matrix[i][j], min, max);
                 cmr.push(c);
             }
             cm.push(cmr);
@@ -183,11 +194,13 @@ impl EncryptKey {
     }
 
     pub fn decrypt_vector(&self, cv: &zqz::vector::CipherVector) -> Vec<f64> {
-        
-        let mut v :Vec<f64> = Vec::new();
-        
-        for i in 0..cv.dim{
-            let dec: f64 = cv.ciphervector[i].cipherfloat.decrypt_decode(&self.secret).unwrap();
+        let mut v: Vec<f64> = Vec::new();
+
+        for i in 0..cv.dim {
+            let dec: f64 = cv.ciphervector[i]
+                .cipherfloat
+                .decrypt_decode(&self.secret)
+                .unwrap();
             v.push(dec);
         }
         return v;
@@ -195,13 +208,15 @@ impl EncryptKey {
 
     #[allow(dead_code)]
     pub fn decrypt_matrix(&self, cm: &zqz::matrix::CipherMatrix) -> Vec<Vec<f64>> {
-        
-        let mut m :Vec<Vec<f64>> = Vec::new();
-        
-        for i in 0..cm.dim_n{
-            let mut row :Vec<f64> = Vec::new();
-            for j in 0..cm.dim_m{
-                let dec: f64 = cm.ciphermatrix[i][j].cipherfloat.decrypt_decode(&self.secret).unwrap();
+        let mut m: Vec<Vec<f64>> = Vec::new();
+
+        for i in 0..cm.dim_n {
+            let mut row: Vec<f64> = Vec::new();
+            for j in 0..cm.dim_m {
+                let dec: f64 = cm.ciphermatrix[i][j]
+                    .cipherfloat
+                    .decrypt_decode(&self.secret)
+                    .unwrap();
                 row.push(dec);
             }
             m.push(row);
@@ -214,4 +229,5 @@ impl EncryptKey {
         let dec: f64 = ct.cipherfloat.decrypt_decode(&self.secret).unwrap();
         return dec;
     }
+
 }

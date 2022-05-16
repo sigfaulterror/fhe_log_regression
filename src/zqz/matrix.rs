@@ -7,10 +7,10 @@ use zqz::keys::HomomorphicKey;
 /// An encrypted message.
 #[derive(Debug, Clone, PartialEq)]
 pub struct CipherMatrix {
-    pub(super) ciphermatrix: Vec<Vec<zqz::cipherfloat::Cipherfloat>>,
-    pub(super) dim_n: usize,
-    pub(super) dim_m: usize,
-    pub(super) evaluation_key: Rc<HomomorphicKey>,
+    pub ciphermatrix: Vec<Vec<zqz::cipherfloat::Cipherfloat>>,
+    pub dim_n: usize,
+    pub dim_m: usize,
+    pub evaluation_key: Rc<HomomorphicKey>,
 }
 impl CipherMatrix {
     #[allow(dead_code)]
@@ -33,13 +33,8 @@ impl Add<&CipherMatrix> for &CipherMatrix {
         for i in 0..self.dim_n {
             let mut result_row: Vec<zqz::cipherfloat::Cipherfloat> = Vec::new();
             for j in 0..self.dim_m {
-                //let self_padding = self.ciphermatrix[i][j].cipherfloat.encoder.nb_bit_padding;
                 let other: &zqz::cipherfloat::Cipherfloat = &other.ciphermatrix[i][j];
-                //let other_padding = other.cipherfloat.encoder.nb_bit_padding;
-                //println!("self_padding: {}", self_padding);
-                //println!("other_padding: {}", other_padding);
                 let sum = &self.ciphermatrix[i][j] + other;
-                //println!("sum_padding: {}", &sum.cipherfloat.encoder.nb_bit_padding);
                 result_row.push(sum);
             }
             result.push(result_row);
@@ -104,17 +99,10 @@ impl Mul<&zqz::vector::CipherVector> for &CipherMatrix {
         for i in 0..self.dim_n {
             let row: &Vec<zqz::cipherfloat::Cipherfloat> = &self.ciphermatrix[i];
             let mut v: zqz::cipherfloat::Cipherfloat = &row[0] * &other.ciphervector[0];
-            //println!("v = {} * {}",secret_key.decrypt(&row[0]),secret_key.decrypt(&vector[0]));
-            //println!("V[0][0]={}",secret_key.decrypt(&v));
-            for j in 0..self.dim_m {
+            for j in 1..self.dim_m {
                 let m: zqz::cipherfloat::Cipherfloat = &row[j] * &other.ciphervector[j];
-                //println!("M[{}][{}]={}",i,j,secret_key.decrypt(&m));
-                //println!("m = {} * {}",secret_key.decrypt(&row[j]),secret_key.decrypt(&vector[j]));
-                //println!("VB[{}][{}]={}",i,j,secret_key.decrypt(&v));
                 v = &m + &v;
-                //println!("VA[{}][{}]={}",i,j,secret_key.decrypt(&v));
             }
-            //println!("V[{}]={}",i,secret_key.decrypt(&v));
             result.push(v);
         }
         zqz::vector::CipherVector {

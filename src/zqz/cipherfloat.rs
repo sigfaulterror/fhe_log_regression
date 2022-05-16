@@ -32,6 +32,22 @@ fn bs_ks<F: Fn(f64) -> f64>(
     }
 }
 
+impl Cipherfloat {
+    pub fn bs_ks<F: Fn(f64) -> f64>(self, func: F) -> Cipherfloat {
+        let res = bs_ks(
+            &self.cipherfloat,
+            &self.evaluation_key.bootstrapping,
+            func,
+            &self.cipherfloat.encoder,
+            &self.evaluation_key.keyswitching,
+        );
+
+        Cipherfloat {
+            cipherfloat: res,
+            evaluation_key: self.evaluation_key.clone(),
+        }
+    }
+}
 // Adds two cipherfloats using the `+` operator.
 impl Add<&Cipherfloat> for &Cipherfloat {
     type Output = Cipherfloat;
@@ -43,8 +59,16 @@ impl Add<&Cipherfloat> for &Cipherfloat {
             .add_with_padding_exact(&other.cipherfloat)
             .unwrap();
 
+        let res = bs_ks(
+            &sum,
+            &self.evaluation_key.bootstrapping,
+            |x| x,
+            &self.cipherfloat.encoder,
+            &self.evaluation_key.keyswitching,
+        );
+
         Cipherfloat {
-            cipherfloat: sum,
+            cipherfloat: res,
             evaluation_key: self.evaluation_key.clone(),
         }
     }
@@ -139,19 +163,16 @@ impl Mul<&Cipherfloat> for &Cipherfloat {
     type Output = Cipherfloat;
 
     fn mul(self, other: &Cipherfloat) -> Self::Output {
-        // addition
         let posi = self
             .cipherfloat
             .add_with_padding_exact(&other.cipherfloat)
             .unwrap();
-
-        // subtraction
+        
         let nega = self
             .cipherfloat
             .sub_with_padding_exact(&other.cipherfloat)
             .unwrap();
-
-        // modulo
+        
         let mut res_posi = bs_ks(
             &posi,
             &self.evaluation_key.bootstrapping,
@@ -160,7 +181,6 @@ impl Mul<&Cipherfloat> for &Cipherfloat {
             &self.evaluation_key.keyswitching,
         );
 
-        // modulo
         let res_nega = bs_ks(
             &nega,
             &self.evaluation_key.bootstrapping,
@@ -172,9 +192,16 @@ impl Mul<&Cipherfloat> for &Cipherfloat {
         // subtraction
         res_posi.sub_with_padding_exact_inplace(&res_nega).unwrap();
 
+        let res = bs_ks(
+            &res_posi,
+            &self.evaluation_key.bootstrapping,
+            |x| (x),
+            &self.cipherfloat.encoder,
+            &self.evaluation_key.keyswitching,
+        );
 
         Cipherfloat {
-            cipherfloat: res_posi,
+            cipherfloat: res,
             evaluation_key: self.evaluation_key.clone(),
         }
     }

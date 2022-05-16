@@ -6,8 +6,6 @@ pub mod matrix;
 pub mod vector;
 pub mod keys;
 pub mod utils;
-//#[cfg(test)]
-//mod tests;
 
 // A structure representing the parameters of the
 pub struct Parameters {

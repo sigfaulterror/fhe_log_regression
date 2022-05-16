@@ -7,9 +7,9 @@ use zqz::keys::HomomorphicKey;
 /// An encrypted message.
 #[derive(Debug, Clone, PartialEq)]
 pub struct CipherVector {
-    pub(super) ciphervector: Vec<zqz::cipherfloat::Cipherfloat>,
-    pub(super) dim: usize,
-    pub(super) evaluation_key: Rc<HomomorphicKey>,
+    pub ciphervector: Vec<zqz::cipherfloat::Cipherfloat>,
+    pub dim: usize,
+    pub evaluation_key: Rc<HomomorphicKey>,
 }
 impl CipherVector {
     #[allow(dead_code)]

@@ -1,5 +1,5 @@
 //! A module containing utilities functions and macros.
-// use crate::PARAMS;
+use crate::PARAMS;
 
 
 // This macro allows to compute the duration of the execution of the expressions enclosed. Note that
@@ -14,6 +14,24 @@ macro_rules! measure_duration{
         )+
         let __time = __now.elapsed().unwrap().as_millis() as f64 / 1000.;
         let __s_time = format!("{} s", __time);
-        println!("Duration: {}", __s_time.green().bold());
+        println!("Duration: {}", __s_time);
     }
+}
+/// Compute the round and then the modulo
+pub(super) fn round_modulo(x: f64) -> f64 {
+    let tmp = (x.round()) as i32;
+    let i: i32 = tmp % (PARAMS.modulo as i32);
+    let res = if i < 0 { i + (PARAMS.modulo as i32) } else { i };
+    res as f64
+}
+
+/// compute the floor and then the modulo
+pub(super) fn floor_modulo(x: f64) -> f64 {
+    let tmp = x % (PARAMS.modulo as f64);
+    let res = if tmp < 0. {
+        tmp + PARAMS.modulo as f64
+    } else {
+        tmp
+    };
+    res.floor()
 }
